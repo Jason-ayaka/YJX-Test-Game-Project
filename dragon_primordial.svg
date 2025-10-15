@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <!-- 背景 -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a2e" />
+      <stop offset="100%" stop-color="#16213e" />
+    </linearGradient>
+    <radialGradient id="glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#ff5252" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#ff5252" stop-opacity="0" />
+    </radialGradient>
+    <!-- 鳞片图案 -->
+    <pattern id="scalePattern" patternUnits="userSpaceOnUse" width="20" height="20" patternTransform="rotate(45)">
+      <path d="M10,0 L20,10 L10,20 L0,10 Z" fill="rgba(255,82,82,0.1)" />
+    </pattern>
+  </defs>
+  
+  <!-- 背景矩形 -->
+  <rect width="800" height="600" fill="url(#bgGradient)" />
+  
+  <!-- 发光效果 -->
+  <circle cx="400" cy="300" r="300" fill="url(#glowGradient)" />
+  
+  <!-- 龙的身体 -->
+  <g>
+    <!-- 龙的主体 -->
+    <path d="M400,300 C350,250 300,280 250,260 C200,240 180,200 180,160 C180,120 220,100 260,120 C300,140 320,180 350,170 C380,160 400,140 420,130 C440,120 460,130 480,150 C500,170 520,200 540,230 C560,260 580,300 600,340 C620,380 640,430 620,470 C600,510 550,540 500,550 C450,560 400,550 350,530 C300,510 270,470 250,430 C230,390 220,340 240,300 C260,260 300,240 350,250 C400,260 450,280 400,300 Z" 
+          fill="#2c3e50" stroke="#e74c3c" stroke-width="2" />
+    
+    <!-- 龙的脖子和头部 -->
+    <path d="M400,300 C420,290 450,280 480,270 C510,260 540,250 570,240 C600,230 630,230 650,240 C670,250 680,270 670,290 C660,310 640,330 620,340" 
+          fill="#2c3e50" stroke="#e74c3c" stroke-width="2" />
+    
+    <!-- 头部细节 -->
+    <path d="M670,290 C680,300 690,310 690,320 C690,330 680,340 670,340 C660,340 650,330 650,320 C650,310 660,300 670,290 Z" 
+          fill="#34495e" stroke="#e74c3c" stroke-width="1" />
+    
+    <!-- 眼睛 - 红色发光眼睛 -->
+    <circle cx="650" cy="280" r="8" fill="#2c3e50" />
+    <circle cx="650" cy="280" r="4" fill="#e74c3c" />
+    <circle cx="650" cy="280" r="2" fill="white" />
+    <circle cx="650" cy="280" r="12" fill="none" stroke="#e74c3c" stroke-width="1" opacity="0.5" />
+    
+    <!-- 龙角 -->
+    <path d="M660,240 C670,210 690,190 680,170" stroke="#e74c3c" stroke-width="3" fill="none" />
+    <path d="M640,240 C630,210 610,190 620,170" stroke="#e74c3c" stroke-width="3" fill="none" />
+    
+    <!-- 龙的翅膀 -->
+    <path d="M400,300 C380,280 350,260 320,240 C290,220 260,230 240,250 C220,270 210,290 220,310 C230,330 250,350 280,360" 
+          fill="#1a1a2e" stroke="#e74c3c" stroke-width="2" />
+    
+    <!-- 翅膀细节 -->
+    <path d="M320,240 C300,270 270,300 250,330" stroke="#e74c3c" stroke-width="1" fill="none" />
+    <path d="M290,220 C270,250 250,280 230,310" stroke="#e74c3c" stroke-width="1" fill="none" />
+    
+    <!-- 龙的尾巴 -->
+    <path d="M250,430 C230,450 220,470 210,490 C200,510 190,530 200,550 C210,570 230,580 250,570" 
+          stroke="#e74c3c" stroke-width="3" fill="none" />
+    
+    <!-- 爪子 -->
+    <path d="M400,300 C410,320 420,340 410,360" stroke="#e74c3c" stroke-width="3" fill="none" />
+    <path d="M410,360 C405,370 400,370 395,360" stroke="#e74c3c" stroke-width="2" fill="none" />
+    
+    <path d="M450,350 C460,370 470,390 460,410" stroke="#e74c3c" stroke-width="3" fill="none" />
+    <path d="M460,410 C455,420 450,420 445,410" stroke="#e74c3c" stroke-width="2" fill="none" />
+    
+    <!-- 腹部 -->
+    <path d="M350,300 C360,310 380,310 400,300 C420,290 440,290 450,300 C460,310 480,310 500,300 C520,290 540,290 560,300 C580,310 600,320 620,340" 
+          stroke="#e74c3c" stroke-width="1" fill="none" opacity="0.5" />
+    
+    <!-- 鳞片效果 -->
+    <rect x="200" y="200" width="400" height="300" fill="url(#scalePattern)" opacity="0.3" />
+    
+    <!-- 能量效果 -->
+    <path d="M670,290 C690,320 710,360 690,400 C670,440 630,480 620,470" 
+          stroke="#e74c3c" stroke-width="2" stroke-dasharray="5,5" fill="none" opacity="0.7" />
+    
+    <!-- 文字标记 -->
+    <text x="400" y="580" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#e74c3c" text-anchor="middle">源初魔龙 尼伯罗根</text>
+  </g>
+</svg>
