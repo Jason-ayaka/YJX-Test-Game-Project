@@ -2965,6 +2965,7 @@
             maxEnergy: 3,
             hand: [],
             buffs: [],
+            legendaryBuffCount: 0,
             currentEnemy: null,
             battleLog: [],
             // 新卡牌效果相关状态
@@ -4768,16 +4769,41 @@
             return allArt[artType] || allArt['sword-strike'];
         }
 
-        // 添加卡牌到牌组
-        function addCardToDeck(cardName) {
+        // 统一的卡牌添加函数，包含数量限制检查
+        function safeAddCardToDeck(cardName, showAlert = true) {
             // 检查牌组是否已满
             if (gameState.playerDeck.length >= 20) {
-                return;
+                return false;
             }
             
             // 获取卡牌信息
             const card = cardDatabase[cardName];
-            if (!card) return;
+            if (!card) return false;
+            
+            // 检查同名卡牌数量限制
+            const sameCardCount = gameState.playerDeck.filter(c => c === cardName).length;
+            if (sameCardCount >= 3) {
+                if (showAlert) {
+                    alert(`最多只能选择3张「${cardName}」加入牌库！`);
+                }
+                return false;
+            }
+            
+            // 添加卡牌
+            gameState.playerDeck.push(cardName);
+            return true;
+        }
+        
+        // 添加卡牌到牌组
+        function addCardToDeck(cardName) {
+            if (safeAddCardToDeck(cardName)) {
+                updateDeckDisplay();
+                updateUI();
+            }
+            
+            // 获取卡牌信息
+            const card = cardDatabase[cardName];
+            if (!card) return; // 如果卡牌不存在，直接返回
             
             // 检查是否是非本角色或非通用的其他职业卡牌
             const isOtherClassCard = card.character !== gameState.selectedCharacter && 
@@ -4874,10 +4900,23 @@
                     const rareCards = Object.keys(cardDatabase).filter(name => 
                         cardDatabase[name].rarity === 'rare' && cardDatabase[name].type !== 'curse' && cardDatabase[name].rarity !== 'legendary'
                     );
-                    const randomRare = rareCards[Math.floor(Math.random() * rareCards.length)];
-                    gameState.playerDeck.push(randomRare);
-                    gameState.battleLog = gameState.battleLog || [];
-                    gameState.battleLog.push(`获得了稀有卡牌: ${randomRare}！`);
+                    let randomRare;
+                    let attempts = 0;
+                    const maxAttempts = 10;
+                    
+                    // 尝试找到一张可以添加的稀有卡牌（不超过3张限制）
+                    do {
+                        randomRare = rareCards[Math.floor(Math.random() * rareCards.length)];
+                        attempts++;
+                    } while (!safeAddCardToDeck(randomRare, false) && attempts < maxAttempts);
+                    
+                    if (attempts < maxAttempts) {
+                        gameState.battleLog = gameState.battleLog || [];
+                        gameState.battleLog.push(`获得了稀有卡牌: ${randomRare}！`);
+                    } else {
+                        gameState.battleLog = gameState.battleLog || [];
+                        gameState.battleLog.push('牌库中无法添加更多卡牌！');
+                    }
                     break;
                     
                 case 'relic':
@@ -4919,17 +4958,31 @@
                     break;
                     
                 case 'heal_potion':
-                    gameState.playerDeck.push('治疗药水');
-                    gameState.battleLog.push('获得了治疗药水卡牌！');
+                    if (safeAddCardToDeck('治疗药水', false)) {
+                        gameState.battleLog.push('获得了治疗药水卡牌！');
+                    } else {
+                        gameState.battleLog.push('牌库中已拥有3张治疗药水！');
+                    }
                     break;
                     
                 case 'magic_card':
                     const magicCards = Object.keys(cardDatabase).filter(name => 
                         cardDatabase[name].type === 'magic' && cardDatabase[name].rarity !== 'curse'
                     );
-                    const randomMagic = magicCards[Math.floor(Math.random() * magicCards.length)];
-                    gameState.playerDeck.push(randomMagic);
-                    gameState.battleLog.push(`学会了法术: ${randomMagic}！`);
+                    let randomMagic;
+                    let magicAttempts = 0;
+                    
+                    // 尝试找到一张可以添加的法术卡牌
+                    do {
+                        randomMagic = magicCards[Math.floor(Math.random() * magicCards.length)];
+                        magicAttempts++;
+                    } while (!safeAddCardToDeck(randomMagic, false) && magicAttempts < 10);
+                    
+                    if (magicAttempts < 10) {
+                        gameState.battleLog.push(`学会了法术: ${randomMagic}！`);
+                    } else {
+                        gameState.battleLog.push('牌库中无法添加更多卡牌！');
+                    }
                     break;
                     
                 case 'upgrade_card':
@@ -4953,20 +5006,41 @@
                     const curses = Object.keys(cardDatabase).filter(name => 
                         cardDatabase[name].type === 'curse'
                     );
-                    const treasureCard = treasureRares[Math.floor(Math.random() * treasureRares.length)];
+                    // 选择宝藏卡牌
+                    let treasureCard;
+                    let treasureAttempts = 0;
+                    do {
+                        treasureCard = treasureRares[Math.floor(Math.random() * treasureRares.length)];
+                        treasureAttempts++;
+                    } while (!safeAddCardToDeck(treasureCard, false) && treasureAttempts < 10);
+                    
+                    // 选择诅咒卡牌
                     const curseCard = curses[Math.floor(Math.random() * curses.length)];
-                    gameState.playerDeck.push(treasureCard);
-                    gameState.playerDeck.push(curseCard);
-                    gameState.battleLog.push(`获得了稀有卡牌 ${treasureCard}，但也被诅咒了 ${curseCard}！`);
+                    gameState.playerDeck.push(curseCard); // 诅咒卡牌不限制数量
+                    
+                    if (treasureAttempts < 10) {
+                        gameState.battleLog.push(`获得了稀有卡牌 ${treasureCard}，但也被诅咒了 ${curseCard}！`);
+                    } else {
+                        gameState.battleLog.push(`被诅咒了 ${curseCard}，但无法添加更多卡牌到牌库！`);
+                    }
                     break;
                     
                 case 'purified_treasure':
                     const purifiedRares = Object.keys(cardDatabase).filter(name => 
                         cardDatabase[name].rarity === 'rare' && cardDatabase[name].type !== 'curse' && cardDatabase[name].rarity !== 'legendary'
                     );
-                    const purifiedCard = purifiedRares[Math.floor(Math.random() * purifiedRares.length)];
-                    gameState.playerDeck.push(purifiedCard);
-                    gameState.battleLog.push(`净化宝箱后获得了稀有卡牌: ${purifiedCard}！`);
+                    let purifiedCard;
+                    let purifiedAttempts = 0;
+                    do {
+                        purifiedCard = purifiedRares[Math.floor(Math.random() * purifiedRares.length)];
+                        purifiedAttempts++;
+                    } while (!safeAddCardToDeck(purifiedCard, false) && purifiedAttempts < 10);
+                    
+                    if (purifiedAttempts < 10) {
+                        gameState.battleLog.push(`净化宝箱后获得了稀有卡牌: ${purifiedCard}！`);
+                    } else {
+                        gameState.battleLog.push('净化宝箱后发现牌库中无法添加更多卡牌！');
+                    }
                     break;
                     
                 case 'nothing':
@@ -5088,18 +5162,23 @@
             const price = rarityPrices[selectedRarity];
             
             if (gameState.gold >= price) {
-                gameState.gold -= price;
-                gameState.playerDeck.push(randomCard);
-                const rarityText = {
-                    'common': '普通',
-                    'uncommon': '罕见', 
-                    'rare': '稀有',
-                    'curse': '诅咒'
-                };
-                gameState.battleLog = gameState.battleLog || [];
-                gameState.battleLog.push(`花费${price}金币获得了${rarityText[selectedRarity]}卡牌: ${randomCard}！`);
-                updateDeckDisplay();
-                updateUI();
+                // 检查是否可以添加卡牌
+                if (safeAddCardToDeck(randomCard, false)) {
+                    gameState.gold -= price;
+                    const rarityText = {
+                        'common': '普通',
+                        'uncommon': '罕见', 
+                        'rare': '稀有',
+                        'curse': '诅咒'
+                    };
+                    gameState.battleLog = gameState.battleLog || [];
+                    gameState.battleLog.push(`花费${price}金币获得了${rarityText[selectedRarity]}卡牌: ${randomCard}！`);
+                    updateDeckDisplay();
+                    updateUI();
+                } else {
+                    gameState.battleLog = gameState.battleLog || [];
+                    gameState.battleLog.push(`牌库中已拥有3张${randomCard}，无法再次购买！`);
+                }
             } else {
                 gameState.battleLog = gameState.battleLog || [];
                 gameState.battleLog.push(`金币不足！需要${price}金币。`);
@@ -5605,7 +5684,7 @@
             // 检查敌人是否死亡
             if (gameState.currentEnemy.hp <= 0) {
                 // 源初魔龙特殊处理：第一条命结束后复活进入第4阶段
-                if (gameState.currentEnemy.name === '源初魔龙尼伯罗根' && gameState.currentEnemy.currentPhase < 3) {
+                if (gameState.currentEnemy.name === '源初魔龙尼伯罗根' && (!gameState.currentEnemy.rebirthCount || gameState.currentEnemy.rebirthCount === 0)) {
                     // 第一条命结束，复活进入第4阶段（死亡轮回）
                     gameState.currentEnemy.hp = Math.floor(gameState.currentEnemy.maxHp * 0.6);
                     gameState.currentEnemy.currentPhase = 3;
@@ -5963,10 +6042,84 @@
             }
             
             if (gameState.passiveAbility === 'arcane_intellect' && card.type === 'magic') {
-                gameState.spellsPlayedThisTurn++;
-                if (gameState.spellsPlayedThisTurn % 2 === 0) {
-                    drawCards(1);
-                    addLog('奥术智慧：抽1张牌！');
+                // 使用局部变量进行计数，避免状态不一致
+                const currentSpellCount = gameState.spellsPlayedThisTurn + 1;
+                
+                // 立即更新游戏状态中的计数
+                gameState.spellsPlayedThisTurn = currentSpellCount;
+                
+                // 检查是否需要抽牌（每2张魔法牌）
+                if (currentSpellCount % 2 === 0) {
+                    // 使用一个临时变量来存储抽牌前的手牌数量，用于后续验证
+                    const handSizeBeforeDraw = gameState.hand.length;
+                    
+                    // 立即执行抽牌逻辑
+                    let cardDrawn = false;
+                    let drawnCardName = null;
+                    
+                    // 1. 处理牌库为空的情况
+                    if (gameState.drawPile.length === 0) {
+                        if (gameState.discardPile.length > 0) {
+                            // 将弃牌堆洗入牌库
+                            gameState.drawPile = [...gameState.discardPile];
+                            gameState.discardPile = [];
+                            
+                            // 洗牌
+                            for (let j = gameState.drawPile.length - 1; j > 0; j--) {
+                                const k = Math.floor(Math.random() * (j + 1));
+                                [gameState.drawPile[j], gameState.drawPile[k]] = [gameState.drawPile[k], gameState.drawPile[j]];
+                            }
+                            addLog('牌库已重置并洗牌！');
+                        } else {
+                            addLog('没有更多卡牌可抽！');
+                        }
+                    }
+                    
+                    // 2. 执行抽牌
+                    if (gameState.drawPile.length > 0) {
+                        drawnCardName = gameState.drawPile.shift();
+                        gameState.hand.push(drawnCardName);
+                        cardDrawn = true;
+                    }
+                    
+                    // 3. 强制同步更新UI，确保状态和显示完全一致
+                    if (cardDrawn) {
+                        // 确保手牌UI元素存在
+                        const handContainer = document.getElementById('hand');
+                        if (handContainer) {
+                            // 清空手牌容器，确保没有残留元素
+                            handContainer.innerHTML = '';
+                            
+                            // 重新创建所有手牌元素
+                            for (let i = 0; i < gameState.hand.length; i++) {
+                                const handCardName = gameState.hand[i];
+                                const cardElement = createCardElement(handCardName, () => playCard(i));
+                                const card = cardDatabase[handCardName];
+                                
+                                // 设置卡牌可用性状态
+                                if (gameState.energy < card.cost) {
+                                    cardElement.style.opacity = '0.5';
+                                    cardElement.style.cursor = 'not-allowed';
+                                }
+                                
+                                // 为新抽到的卡牌添加动画
+                                if (handCardName === drawnCardName) {
+                                    cardElement.style.animation = 'fadeIn 0.5s ease-out forwards';
+                                    cardElement.style.opacity = '0';
+                                    cardElement.style.transform = 'translateY(20px)';
+                                }
+                                
+                                handContainer.appendChild(cardElement);
+                            }
+                        }
+                        
+                        // 更新牌库信息
+                        if (document.getElementById('drawPileInfo')) {
+                            document.getElementById('drawPileInfo').textContent = `🃏 牌库: ${gameState.drawPile.length}张 | 弃牌堆: ${gameState.discardPile.length}张`;
+                        }
+                        
+                        addLog('奥术智慧：抽1张牌！');
+                    }
                 }
             }
             
@@ -6018,6 +6171,16 @@
                 // 骑士神圣伤害加成
                 if (card.holy && gameState.selectedCharacter === 'knight' && characters.knight) {
                     damage += (characters.knight.holyBonus || 0);
+                    
+                    // 应用神圣之力增益效果（虔诚卡牌）
+                    const holyStrengthBuff = gameState.buffs.find(b => b.type === 'holy_strength' || b.name === '神圣之力');
+                    if (holyStrengthBuff) {
+                        const holyBonus = holyStrengthBuff.stacks * 4;
+                        damage += holyBonus;
+                        // 消耗神圣之力buff
+                        gameState.buffs = gameState.buffs.filter(b => !(b.type === 'holy_strength' || b.name === '神圣之力'));
+                        addLog(`神圣之力：额外造成${holyBonus}点伤害！`);
+                    }
                 }
                 // 全局邪能伤害加成
                 if (gameState.felPower && gameState.selectedCharacter === 'warlock') {
@@ -6392,7 +6555,8 @@
                             'frenzy': '狂热',
                             'power': '力量',
                             'strength': '力量',
-                            'spellpower': '法术强度'
+                            'spellpower': '法术强度',
+                            'holy_strength': '神圣之力'
                         };
                         gameState.buffs.push({ name: buffNames[card.buff] || card.buff, stacks: stacks, type: card.buff });
                     }
@@ -7515,20 +7679,35 @@
                 font-weight: bold;
                 box-shadow: 0 4px 12px rgba(255, 215, 0, 0.8);
             `;
+            
+            // 初始化传奇强化计数器
+            if (!gameState.legendaryBuffCount) gameState.legendaryBuffCount = 0;
+            
+            // 计算递减的强化效果
+            const hpBonus = Math.max(20, 40 - gameState.legendaryBuffCount * 5);
+            const energyBonus = Math.max(1, 2 - Math.floor(gameState.legendaryBuffCount / 2));
+            const strengthBonus = Math.max(1, 3 - Math.floor(gameState.legendaryBuffCount / 1));
+            
             legendaryBuff.innerHTML = `
                 <h3>🌟 传奇强化</h3>
-                <p>最大生命值 +50</p>
-                <p>最大能量 +2</p>
-                <p>永久获得3层力量</p>
+                <p>最大生命值 +${hpBonus}</p>
+                <p>最大能量 +${energyBonus}</p>
+                <p>永久获得${strengthBonus}层力量</p>
+                ${gameState.legendaryBuffCount > 0 ? `<p style="color:#ff6666;">已获得${gameState.legendaryBuffCount}次，效果递减</p>` : ''}
             `;
+            
             addTouchAndClickEvent(legendaryBuff, () => {
-                gameState.playerMaxHp += 50;
-                gameState.playerHp += 50;
-                gameState.maxEnergy += 2;
+                gameState.playerMaxHp += hpBonus;
+                gameState.playerHp += hpBonus;
+                gameState.maxEnergy += energyBonus;
                 let strengthBuff = gameState.buffs.find(b => b.name === '力量');
-                if (strengthBuff) strengthBuff.stacks += 3;
-                else gameState.buffs.push({ name: '力量', stacks: 3, type: 'power' });
-                addLog('获得了传奇强化！');
+                if (strengthBuff) strengthBuff.stacks += strengthBonus;
+                else gameState.buffs.push({ name: '力量', stacks: strengthBonus, type: 'power' });
+                
+                // 增加传奇强化计数
+                gameState.legendaryBuffCount++;
+                
+                addLog(`获得了传奇强化！生命值+${hpBonus}，能量+${energyBonus}，力量+${strengthBonus}！`);
                 document.querySelectorAll('.reward-card').forEach(card => {
                     card.style.pointerEvents = 'none';
                     card.style.opacity = '0.5';
@@ -7600,8 +7779,11 @@
                         <p>${cardDatabase[randomCard].description}</p>
                     `;
                     addTouchAndClickEvent(rewardCard, () => {
-                        gameState.playerDeck.push(randomCard);
-                        addLog(`获得了${rarityText[selectedRarity]}卡牌: ${randomCard}！`);
+                        if (safeAddCardToDeck(randomCard, false)) {
+                            addLog(`获得了${rarityText[selectedRarity]}卡牌: ${randomCard}！`);
+                        } else {
+                            addLog(`牌库中已拥有3张${randomCard}，无法添加更多！`);
+                        }
                         selectReward();
                     });
                 } else if (type === 'buff') {
@@ -7801,6 +7983,7 @@
                 maxEnergy: 3,
                 hand: [],
                 buffs: [],
+                legendaryBuffCount: 0,
                 currentEnemy: null,
                 battleLog: [],
                 // 新卡牌效果相关状态
